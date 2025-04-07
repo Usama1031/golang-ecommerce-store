@@ -40,12 +40,12 @@ func DBInstance() *mongo.Client {
 var Client *mongo.Client = DBInstance()
 
 func UserData(client *mongo.Client, collectionName string) *mongo.Collection {
-	var collection *mongo.Collection = client.Database("Ecommerce").Collection(collectionName)
+	var collection *mongo.Collection = client.Database("ecommerce").Collection(collectionName)
 	return collection
 }
 
 func ProductData(client *mongo.Client, collectionName string) *mongo.Collection {
-	var productCollection *mongo.Collection = client.Database("Ecommerce").Collection(collectionName)
+	var productCollection *mongo.Collection = client.Database("ecommerce").Collection(collectionName)
 
 	return productCollection
 }

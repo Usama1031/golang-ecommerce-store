@@ -9,18 +9,18 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
-	"github.com/usama1031/golang-ecommerce-store/database"
-	"github.com/usama1031/golang-ecommerce-store/helper"
-	"github.com/usama1031/golang-ecommerce-store/models"
+	database "github.com/usama1031/golang-ecommerce-store/database"
+	helper "github.com/usama1031/golang-ecommerce-store/helper"
+	models "github.com/usama1031/golang-ecommerce-store/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/crypto/bcrypt"
 )
 
-var UserCollection *mongo.Collection = database.UserData(database.Client, "Users")
+var UserCollection *mongo.Collection = database.UserData(database.Client, "users")
 
-var ProductCollection *mongo.Collection = database.ProductData(database.Client, "Products")
+var ProductCollection *mongo.Collection = database.ProductData(database.Client, "products")
 
 var validate = validator.New()
 
@@ -89,7 +89,7 @@ func SignUp() gin.HandlerFunc {
 		user.ID = primitive.NewObjectID()
 		user.User_id = user.ID.Hex()
 
-		var token, refreshToken, _ = helper.GenerateToken(*user.Email, *user.First_name, *user.Last_name, *&user.User_id)
+		var token, refreshToken, _ = helper.GenerateToken(*user.Email, *user.First_name, *user.Last_name, user.User_id)
 
 		user.Token = &token
 		user.Refresh_Token = &refreshToken
@@ -134,12 +134,12 @@ func Login() gin.HandlerFunc {
 
 		passwordIsValid, msg := VerifyPassword(*user.Password, *foundUser.Password)
 
-		if passwordIsValid != true {
+		if !passwordIsValid {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": msg})
 			return
 		}
 
-		token, refreshToken, _ := helper.GenerateToken(*foundUser.Email, *foundUser.First_name, *&foundUser.Last_name, *&foundUser.User_id)
+		token, refreshToken, _ := helper.GenerateToken(*foundUser.Email, *foundUser.First_name, *foundUser.Last_name, foundUser.User_id)
 
 		c.SetCookie("token", token, 3600, "/", "", false, true)
 
@@ -149,14 +149,32 @@ func Login() gin.HandlerFunc {
 	}
 }
 
-func ProductViewerAdmin() gin.HandlerFunc {
+func AdminAddProduct() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
 		defer cancel()
+
+		var product models.Product
+
+		if err := c.BindJSON(&product); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		}
+
+		product.Product_ID = primitive.NewObjectID()
+
+		_, err := ProductCollection.InsertOne(ctx, product)
+
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Not inserted"})
+			return
+		}
+
+		c.JSON(http.StatusOK, "Successfully added")
+
 	}
 }
 
-func SearchProduct() gin.HandlerFunc {
+func ProductViewer() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
 		defer cancel()
@@ -208,7 +226,7 @@ func SearchProductByQuery() gin.HandlerFunc {
 			return
 		}
 
-		searchquerydb, err := ProductCollection.Find(ctx, bson.M{"product_name": bson.M{"$regex": queryParam}})
+		searchquerydb, err := ProductCollection.Find(ctx, bson.M{"product_name": bson.M{"$regex": queryParam, "$options": "i"}})
 
 		if err != nil {
 			c.IndentedJSON(404, "not found, something went wrong")
