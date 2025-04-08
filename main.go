@@ -30,10 +30,12 @@ func main() {
 	router.GET("/addtocart", app.AddToCart())
 	router.GET("/removeitem", app.RemoveItem())
 	router.GET("/viewcart", app.ViewCart())
+
 	router.POST("/addaddress", controllers.AddAddress())
-	router.PUT("/edithomeaddress", controllers.EditHomeAddress())
-	router.PUT("/editworkaddress", controllers.EditWorkAddress())
+	router.PUT("/edithomeaddress", controllers.EditAddress())
+	// router.PUT("/editworkaddress", controllers.EditWorkAddress())
 	router.GET("/deleteaddresses", controllers.DeleteAddress())
+
 	router.GET("/cartcheckout", app.BuyFromCart())
 	router.GET("/instantbuy", app.InstantBuy())
 

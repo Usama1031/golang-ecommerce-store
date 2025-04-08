@@ -231,16 +231,19 @@ func (app *Application) InstantBuy() gin.HandlerFunc {
 
 		if err != nil {
 			log.Println(err)
-			c.AbortWithStatus(http.StatusInternalServerError)
+			log.Println("Error while converting product id")
+			return
 		}
+		log.Println("Product ID", productID)
 
 		var ctx, cancel = context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 
-		err = database.InstantBuyer(ctx, app.prodCollection, app.userCollection, productID, userQueryID)
+		err = database.InstantBuyer(ctx, app.userCollection, app.prodCollection, productID, userQueryID)
 
 		if err != nil {
 			c.IndentedJSON(http.StatusInternalServerError, err)
+			return
 		}
 
 		c.IndentedJSON(200, "Successfully placed the order!")
